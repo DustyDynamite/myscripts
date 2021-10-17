@@ -1,5 +1,9 @@
 #! /bin/bash
 
+title="i3-batttery-popup"
+echo -e '\033]2;'$title'\007'
+
+
 ################################################################################
 # A script that shows a battery warning on i3wm                                #
 #                                                                              #

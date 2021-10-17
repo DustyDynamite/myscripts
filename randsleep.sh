@@ -1,5 +1,9 @@
 #! /bin/bash
 
+title="FocusTime"
+echo -e '\033]2;'$title'\007'
+
+
 if [ "$1" != "" ] 
 then
 	tar=$1
