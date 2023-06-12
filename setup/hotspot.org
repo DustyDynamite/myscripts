@@ -1,0 +1,211 @@
+#+TITLE:hotspot
+#+DESCRIPTION: start a hotspot
+#+TODO: TODO(t) NOTE(n@) TIME(l!) | DONE(D)
+#+PROPERTY: LOG_INTO_DRAWER t
+#+PROPERTY: header-args :results verbatim replace output :exports both :noweb yes :session hotspot
+
+#+begin_src sh
+  ip link show
+#+end_src
+
+#+RESULTS:
+: 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+:     link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+: 2: enp8s0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc fq_codel state DOWN mode DEFAULT group default qlen 1000
+:     link/ether ec:b1:d7:be:46:85 brd ff:ff:ff:ff:ff:ff
+: 3: wlo1: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN mode DORMANT group default qlen 1000
+:     link/ether 2e:09:40:e2:78:fb brd ff:ff:ff:ff:ff:ff permaddr 48:51:b7:27:cb:e9
+:     altname wlp9s0
+
+Get wifi name from above, and name
+#+begin_src sh
+  IFNAME="wlo1"
+  CON_NAME="myhotspot"
+#+end_src
+
+#+RESULTS:
+
+#+begin_src sh
+  nmcli con add type wifi ifname $IFNAME con-name $CON_NAME autoconnect yes ssid $CON_NAME
+#+end_src
+
+#+RESULTS:
+: Connection 'myhotspot' (92185ebf-ccd1-465a-aa6a-265a983ac3e7) successfully added.
+
+#+begin_src sh
+  nmcli con modify $CON_NAME 802-11-wireless.mode ap 802-11-wireless.band bg ipv4.method shared
+#+end_src
+
+#+RESULTS:
+
+#+begin_src sh
+  nmcli con modify $CON_NAME wifi.channel 1
+#+end_src
+
+#+RESULTS:
+
+#+begin_src sh
+  nmcli con modify $CON_NAME wifi-sec.key-mgmt wpa-psk
+  nmcli con modify $CON_NAME wifi-sec.psk "12345678boom"
+#+end_src
+
+#+RESULTS:
+
+#+begin_src sh
+  nmcli con up $CON_NAME
+#+end_src
+
+#+RESULTS:
+: Connection successfully activated (D-Bus active path: /org/freedesktop/NetworkManager/ActiveConnection/102)
+
+#+begin_src sh
+  nmcli connection show 
+#+end_src
+
+#+RESULTS:
+#+begin_example
+NAME                          UUID                                  TYPE      DEVICE    
+myhotspot                     92185ebf-ccd1-465a-aa6a-265a983ac3e7  wifi      wlo1      
+nl-free-12.protonvpn.net.udp  68507e6c-975d-4c44-a33e-dded91b6d089  vpn       enp0s20u2 
+tun0                          82dba589-da65-4598-b73a-61a8c4126010  tun       tun0      
+Wired connection 2            8d7e44b8-b65e-3504-aa7b-c07b44ce9e7f  ethernet  enp0s20u2 
+CMCC-693C                     758c05c0-e1f1-44f2-83ba-cac68326ecb3  wifi      --        
+DESKTOP-S2PIPB8 7564          567dbc3f-389e-41ae-89ef-ecb8581aba2b  wifi      --        
+Do not enter this internet    5ba8de18-2d17-4223-a714-908b4f041802  wifi      --        
+fedora                        83120d73-dc36-4e5d-b78d-e8a445bd4ad4  wifi      --        
+fedora 1                      1424f35e-3520-43aa-b00b-472effe1557f  wifi      --        
+fedora 2                      d35591a0-d0f6-42bd-a877-f62d5e3b0fc8  wifi      --        
+Hira vivo                     af7c7869-c292-49d7-9328-8f242540ff94  wifi      --        
+Mian Zain                     a36546e0-1b83-4cf4-a0ca-f1069c07a79e  wifi      --        
+Redmi 9C                      10db0da6-1101-4f1a-a167-554248987455  wifi      --        
+vivo 1823                     419ed082-36d1-417e-bffe-6d5ef148922b  wifi      --        
+Wifi                          479eebb7-3ded-4d26-a028-bdc24618009b  wifi      --        
+Wired connection 1            276d2f20-75f1-35c0-9c4d-591df83f907a  ethernet  --
+#+end_example
+
+#+begin_src sh
+  nmcli connection show $CON_NAME
+#+end_src
+
+#+RESULTS:
+#+begin_example
+connection.id:                          myhotspot
+connection.uuid:                        92185ebf-ccd1-465a-aa6a-265a983ac3e7
+connection.stable-id:                   --
+connection.type:                        802-11-wireless
+connection.interface-name:              wlo1
+connection.autoconnect:                 yes
+connection.autoconnect-priority:        0
+connection.autoconnect-retries:         -1 (default)
+connection.multi-connect:               0 (default)
+connection.auth-retries:                -1
+connection.timestamp:                   0
+connection.read-only:                   no
+connection.permissions:                 --
+connection.zone:                        --
+connection.master:                      --
+connection.slave-type:                  --
+connection.autoconnect-slaves:          -1 (default)
+connection.secondaries:                 --
+connection.gateway-ping-timeout:        0
+connection.metered:                     unknown
+connection.lldp:                        default
+connection.mdns:                        -1 (default)
+connection.llmnr:                       -1 (default)
+connection.dns-over-tls:                -1 (default)
+connection.wait-device-timeout:         -1
+802-11-wireless.ssid:                   myhotspot
+802-11-wireless.mode:                   ap
+802-11-wireless.band:                   bg
+802-11-wireless.channel:                0
+802-11-wireless.bssid:                  --
+802-11-wireless.rate:                   0
+802-11-wireless.tx-power:               0
+802-11-wireless.mac-address:            --
+802-11-wireless.cloned-mac-address:     --
+802-11-wireless.generate-mac-address-mask:--
+802-11-wireless.mac-address-blacklist:  --
+802-11-wireless.mac-address-randomization:default
+802-11-wireless.mtu:                    auto
+802-11-wireless.seen-bssids:            --
+802-11-wireless.hidden:                 no
+802-11-wireless.powersave:              0 (default)
+802-11-wireless.wake-on-wlan:           0x1 (default)
+802-11-wireless.ap-isolation:           -1 (default)
+802-11-wireless-security.key-mgmt:      wpa-psk
+802-11-wireless-security.wep-tx-keyidx: 0
+802-11-wireless-security.auth-alg:      --
+802-11-wireless-security.proto:         --
+802-11-wireless-security.pairwise:      --
+802-11-wireless-security.group:         --
+802-11-wireless-security.pmf:           0 (default)
+802-11-wireless-security.leap-username: --
+802-11-wireless-security.wep-key0:      <hidden>
+802-11-wireless-security.wep-key1:      <hidden>
+802-11-wireless-security.wep-key2:      <hidden>
+802-11-wireless-security.wep-key3:      <hidden>
+802-11-wireless-security.wep-key-flags: 0 (none)
+802-11-wireless-security.wep-key-type:  unknown
+802-11-wireless-security.psk:           <hidden>
+802-11-wireless-security.psk-flags:     0 (none)
+802-11-wireless-security.leap-password: <hidden>
+802-11-wireless-security.leap-password-flags:0 (none)
+802-11-wireless-security.wps-method:    0x0 (default)
+802-11-wireless-security.fils:          0 (default)
+ipv4.method:                            shared
+ipv4.dns:                               --
+ipv4.dns-search:                        --
+ipv4.dns-options:                       --
+ipv4.dns-priority:                      0
+ipv4.addresses:                         --
+ipv4.gateway:                           --
+ipv4.routes:                            --
+ipv4.route-metric:                      -1
+ipv4.route-table:                       0 (unspec)
+ipv4.routing-rules:                     --
+ipv4.ignore-auto-routes:                no
+ipv4.ignore-auto-dns:                   no
+ipv4.dhcp-client-id:                    --
+ipv4.dhcp-iaid:                         --
+ipv4.dhcp-timeout:                      0 (default)
+ipv4.dhcp-send-hostname:                yes
+ipv4.dhcp-hostname:                     --
+ipv4.dhcp-fqdn:                         --
+ipv4.dhcp-hostname-flags:               0x0 (none)
+ipv4.never-default:                     no
+ipv4.may-fail:                          yes
+ipv4.required-timeout:                  -1 (default)
+ipv4.dad-timeout:                       -1 (default)
+ipv4.dhcp-vendor-class-identifier:      --
+ipv4.dhcp-reject-servers:               --
+ipv6.method:                            auto
+ipv6.dns:                               --
+ipv6.dns-search:                        --
+ipv6.dns-options:                       --
+ipv6.dns-priority:                      0
+ipv6.addresses:                         --
+ipv6.gateway:                           --
+ipv6.routes:                            --
+ipv6.route-metric:                      -1
+ipv6.route-table:                       0 (unspec)
+ipv6.routing-rules:                     --
+ipv6.ignore-auto-routes:                no
+ipv6.ignore-auto-dns:                   no
+ipv6.never-default:                     no
+ipv6.may-fail:                          yes
+ipv6.required-timeout:                  -1 (default)
+ipv6.ip6-privacy:                       -1 (unknown)
+ipv6.addr-gen-mode:                     stable-privacy
+ipv6.ra-timeout:                        0 (default)
+ipv6.dhcp-duid:                         --
+ipv6.dhcp-iaid:                         --
+ipv6.dhcp-timeout:                      0 (default)
+ipv6.dhcp-send-hostname:                yes
+ipv6.dhcp-hostname:                     --
+ipv6.dhcp-hostname-flags:               0x0 (none)
+ipv6.token:                             --
+proxy.method:                           none
+proxy.browser-only:                     no
+proxy.pac-url:                          --
+proxy.pac-script:                       --
+#+end_example
