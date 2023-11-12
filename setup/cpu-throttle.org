@@ -1,0 +1,139 @@
+#+TITLE:CPU Throttle
+#+DESCRIPTION: Throttle the cpu to use less/more electricity and produce less/more heat
+#+TODO: TODO(t) NOTE(n@) TIME(l!) | DONE(D)
+#+PROPERTY: LOG_INTO_DRAWER t
+#+PROPERTY: header-args :results verbatim replace output :exports both :noweb yes :session cpu-throttle
+
+Start shell.
+#+begin_src sh
+  echo "hello"
+#+end_src
+
+#+RESULTS:
+: hello
+
+Get temporary sudo access. Requires pressing C-g after entering two passwords.
+#+begin_src sh
+  sudo echo "hello"
+#+end_src
+
+#+RESULTS:
+: hello
+
+Live check for whether your cpu is throttling.
+#+begin_src sh :eval no
+  journalctl | grep 'temp.*throttled'
+#+end_src
+
+Default cpu stats.
+#+begin_src sh
+  lscpu | egrep "Model name|MHz"
+#+end_src
+
+#+RESULTS:
+: Model name:                      Intel(R) Core(TM) i3-4030U CPU @ 1.90GHz
+: CPU(s) scaling MHz:              95%
+: CPU max MHz:                     1900.0000
+: CPU min MHz:                     800.0000
+
+Install cpupower.
+#+begin_src sh :eval no
+  sudo dnf install kernel-tools
+#+end_src
+
+Install tlp-stat.
+#+begin_src sh :eval no
+  sudo dnf install tlp
+#+end_src
+
+#+begin_src sh
+  sudo tlp-stat -p | grep 'scaling_available_governors'
+#+end_src
+
+#+RESULTS:
+: /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors = conservative ondemand userspace powersave performance schedutil
+
+#+begin_src sh
+  sudo cpupower --cpu all frequency-set --governor powersave # set governor profile to powersave
+#+end_src
+
+#+RESULTS:
+: Setting cpu: 0
+: Setting cpu: 1
+: Setting cpu: 2
+: Setting cpu: 3
+
+Set cpu max as shown by lscpu.
+#+begin_src sh
+  sudo cpupower --cpu all frequency-set --max 1900000  # set Turbo Boost max CPU freq to 1.9GHz
+#+end_src
+
+#+RESULTS:
+: Setting cpu: 0
+: Setting cpu: 1
+: Setting cpu: 2
+: Setting cpu: 3
+
+Underclock cpu.
+#+begin_src sh
+  sudo cpupower --cpu all frequency-set --max 900000  # set Turbo Boost max CPU freq to 0.9GHz
+#+end_src
+
+#+RESULTS:
+: Setting cpu: 0
+: Setting cpu: 1
+: Setting cpu: 2
+: Setting cpu: 3
+
+Cannot reduce cpu min below 0.8 GHz
+#+begin_src sh
+  sudo cpupower --cpu all frequency-set --min 800000  # set Turbo Boost max CPU freq to 0.9GHz
+#+end_src
+
+#+RESULTS:
+: Setting cpu: 0
+: Setting cpu: 1
+: Setting cpu: 2
+: Setting cpu: 3
+
+#+begin_src sh
+  sudo tlp-stat -p -v | grep 'scaling_max_freq'
+#+end_src
+
+#+RESULTS:
+: /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq  =  1900000 [kHz]
+: /sys/devices/system/cpu/cpu1/cpufreq/scaling_max_freq  =  1900000 [kHz]
+: /sys/devices/system/cpu/cpu2/cpufreq/scaling_max_freq  =  1900000 [kHz]
+: /sys/devices/system/cpu/cpu3/cpufreq/scaling_max_freq  =  1900000 [kHz]
+
+#+begin_src sh
+  sudo tlp-stat -p -v | grep 'scaling_min_freq'
+#+end_src
+
+#+RESULTS:
+: /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq  =   800000 [kHz]
+: /sys/devices/system/cpu/cpu1/cpufreq/scaling_min_freq  =   800000 [kHz]
+: /sys/devices/system/cpu/cpu2/cpufreq/scaling_min_freq  =   800000 [kHz]
+: /sys/devices/system/cpu/cpu3/cpufreq/scaling_min_freq  =   800000 [kHz]
+
+Activate root shell.
+#+begin_src sh
+  sudo bash
+#+end_src
+
+Emacs will hang after the following commands because return result from root shell does not work. So press C-g. They do work.
+
+Disable cpu1.
+#+begin_src sh 
+  echo "0" > /sys/devices/system/cpu/cpu1/online
+#+end_src
+
+Disable cpu2.
+#+begin_src sh
+  echo "0" > /sys/devices/system/cpu/cpu2/online
+#+end_src
+
+Disable cpu3.
+#+begin_src sh
+  echo "0" > /sys/devices/system/cpu/cpu3/online 
+#+end_src

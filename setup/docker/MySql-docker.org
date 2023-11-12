@@ -1,0 +1,300 @@
+#+TITLE:MySQL Docker
+#+DESCRIPTION: Setup and usage of docker file of MySQL docker
+#+TODO: TODO(t) NOTE(n@) TIME(l!) | DONE(D)
+#+PROPERTY: LOG_INTO_DRAWER t
+#+PROPERTY: header-args :results verbatim replace output :exports both :noweb yes :session MySQL-docker
+
+https://phoenixnap.com/kb/mysql-docker-container
+https://dev.mysql.com/doc/mysql-yum-repo-quick-guide/en/
+https://dev.mysql.com/doc/workbench/en/wb-installing-linux.html#wb-installing-linux-installing-rpm
+https://stackoverflow.com/questions/54030469/host-x-is-not-allowed-to-connect-to-this-mysql-server
+* Daemon
+Start secondary shell.
+#+begin_src sh :session docker-daemon
+  echo docker-daemon
+#+end_src
+
+Start daemon.
+#+begin_src sh :session docker-daemon
+  sudo dockerd
+#+end_src
+
+* Setup docker
+Start shell.
+#+begin_src sh
+  echo shell
+#+end_src
+
+#+RESULTS:
+: shell
+
+Get root privilege. Remember emacs will hang on every execute so press C-g.
+Then command will be run. Also emacs will not be able to catch ouput.
+#+begin_src sh
+  sudo su
+#+end_src
+
+
+Pull ms-sql docker image.
+#+begin_src sh
+  sudo docker pull mysql/mysql-server:latest
+#+end_src
+
+#+RESULTS:
+
+* Docker image management
+Check images.
+#+begin_src sh
+  sudo docker images
+#+end_src
+
+#+RESULTS:
+: REPOSITORY           TAG       IMAGE ID       CREATED        SIZE
+: mysql/mysql-server   latest    1d9c2219ff69   8 months ago   496MB
+: hello-world          latest    feb5d9fea6a5   2 years ago    13.3kB
+
+Check containers i.e. running images.
+#+begin_src sh
+  sudo docker ps -a
+#+end_src
+
+#+RESULTS:
+: CONTAINER ID   IMAGE                       COMMAND                  CREATED         STATUS                            PORTS                                                        NAMES
+: c31a237c42e3   mysql/mysql-server:latest   "/entrypoint.sh mysq…"   9 seconds ago   Up 8 seconds (health: starting)   33060-33061/tcp, 0.0.0.0:6603->3306/tcp, :::6603->3306/tcp   mysql_docker
+
+Instance a new container
+#+begin_src sh :eval no
+  sudo docker run --name=[container_name] -d [image_tag_name]
+#+end_src
+
+#+begin_src sh :eval no
+  sudo docker [command] [container_name]
+#+end_src
+Commands: start, stop, restart, rm
+
+#+begin_src sh
+  sudo docker start mysql_docker
+#+end_src
+
+#+begin_src sh
+  sudo docker stop mysql_docker
+#+end_src
+
+#+begin_src sh
+  sudo docker restart mysql_docker
+#+end_src
+
+#+begin_src sh
+  sudo docker rm mysql_docker
+#+end_src
+
+#+RESULTS:
+: mysql_docker
+
+* Start docker instance
+#+begin_src sh :eval no
+  sudo docker run --name=mysql_docker -d mysql/mysql-server:latest
+#+end_src
+
+#+begin_src sh :eval no
+  docker run \
+		 --detach \
+		 --name=[container_name] \
+		 --env="MYSQL_ROOT_PASSWORD=[my_password]" \
+		 --publish 6603:3306 \
+		 --volume=/root/docker/[container_name]/conf.d:/etc/mysql/conf.d \
+		 mysql
+#+end_src
+
+#+name: mysql-password
+#+begin_src text
+  admin
+#+end_src
+
+#+begin_src sh 
+  sudo docker run \
+		 --detach \
+		 --name=mysql \
+		 --env="MYSQL_ROOT_PASSWORD=<<mysql-password>>" \
+		 --env="MYSQL_ROOT_HOST=%" \
+		 --publish 6603:3306 \
+		 --publish 3306:3306 \
+		 --publish 33060:33060 \
+		 mysql/mysql-server:latest
+#+end_src
+
+#+RESULTS:
+: c31a237c42e3609b951fe7ba0f60ea61eb79c56a648351ab88ac9552461d5409
+
+#+begin_src sh
+  sudo docker inspect mysql_docker
+#+end_src
+
+* Installing mysql tools repo
+#+begin_src sh
+  sudo dnf install mysql-shell
+#+end_src
+
+#+RESULTS:
+: Last metadata expiration check: 2:18:52 ago on Mon 25 Sep 2023 08:08:15 AM PKT.
+: No match for argument: mysql-shell
+: Error: Unable to find a match: mysql-shell
+
+Download mysql community repo: https://dev.mysql.com/downloads/repo/yum/
+Install workbench.
+#+begin_src sh
+  sudo rpm -Uvh mysql80-community-release-fc38-2.noarch.rpm
+#+end_src
+
+#+begin_src sh
+  dnf repolist all | grep mysql 
+#+end_src
+
+#+RESULTS:
+#+begin_example
+mysql-connectors-community                           MySQL Connectors C enabled
+mysql-connectors-community-debuginfo                 MySQL Connectors C disabled
+mysql-connectors-community-source                    MySQL Connectors C disabled
+mysql-innovation-community                           MySQL Innovation R disabled
+mysql-innovation-community-debuginfo                 MySQL Innovation R disabled
+mysql-innovation-community-source                    MySQL Innovation R disabled
+mysql-tools-community                                MySQL Tools Commun enabled
+mysql-tools-community-debuginfo                      MySQL Tools Commun disabled
+mysql-tools-community-source                         MySQL Tools Commun disabled
+mysql-tools-innovation-community                     MySQL Tools Innova disabled
+mysql-tools-innovation-community-debuginfo           MySQL Tools Innova disabled
+mysql-tools-innovation-community-source              MySQL Tools Innova disabled
+mysql80-community                                    MySQL 8.0 Communit enabled
+mysql80-community-debuginfo                          MySQL 8.0 Communit disabled
+mysql80-community-source                             MySQL 8.0 Communit disabled
+#+end_example
+
+Install all tools
+#+begin_src sh :eval no
+  sudo dnf install mysql
+#+end_src
+
+If you want install server as well.
+#+begin_src sh :eval no
+  sudo dnf install mysql-community-server
+#+end_src
+
+For installing the workbench.
+#+begin_src sh :eval no
+  sudo dnf install mysql-workbench-community
+#+end_src
+
+* Accessing mysql
+#+begin_src sh
+  sudo docker logs mysql_docker
+#+end_src
+
+#+RESULTS:
+#+begin_example
+[Entrypoint] MySQL Docker Image 8.0.32-1.2.11-server
+[Entrypoint] Initializing database
+2023-09-25T06:08:24.270732Z 0 [Warning] [MY-011068] [Server] The syntax '--skip-host-cache' is deprecated and will be removed in a future release. Please use SET GLOBAL host_cache_size=0 instead.
+2023-09-25T06:08:24.270900Z 0 [System] [MY-013169] [Server] /usr/sbin/mysqld (mysqld 8.0.32) initializing of server in progress as process 17
+2023-09-25T06:08:24.295811Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+2023-09-25T06:08:26.045691Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
+2023-09-25T06:08:30.197240Z 6 [Warning] [MY-010453] [Server] root@localhost is created with an empty password ! Please consider switching off the --initialize-insecure option.
+[Entrypoint] Database initialized
+2023-09-25T06:08:40.632788Z 0 [Warning] [MY-011068] [Server] The syntax '--skip-host-cache' is deprecated and will be removed in a future release. Please use SET GLOBAL host_cache_size=0 instead.
+2023-09-25T06:08:40.635793Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.32) starting as process 60
+2023-09-25T06:08:40.688886Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+2023-09-25T06:08:41.175914Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
+2023-09-25T06:08:42.262019Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
+2023-09-25T06:08:42.262099Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
+2023-09-25T06:08:42.318243Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Socket: /var/run/mysqld/mysqlx.sock
+2023-09-25T06:08:42.318432Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.32'  socket: '/var/lib/mysql/mysql.sock'  port: 0  MySQL Community Server - GPL.
+Warning: Unable to load '/usr/share/zoneinfo/iso3166.tab' as time zone. Skipping it.
+Warning: Unable to load '/usr/share/zoneinfo/leapseconds' as time zone. Skipping it.
+Warning: Unable to load '/usr/share/zoneinfo/tzdata.zi' as time zone. Skipping it.
+Warning: Unable to load '/usr/share/zoneinfo/zone.tab' as time zone. Skipping it.
+Warning: Unable to load '/usr/share/zoneinfo/zone1970.tab' as time zone. Skipping it.
+
+[Entrypoint] ignoring /docker-entrypoint-initdb.d/*
+
+2023-09-25T06:08:45.982437Z 11 [System] [MY-013172] [Server] Received SHUTDOWN from user root. Shutting down mysqld (Version: 8.0.32).
+2023-09-25T06:08:49.735740Z 0 [System] [MY-010910] [Server] /usr/sbin/mysqld: Shutdown complete (mysqld 8.0.32)  MySQL Community Server - GPL.
+[Entrypoint] Server shut down
+
+[Entrypoint] MySQL init process done. Ready for start up.
+
+[Entrypoint] Starting MySQL 8.0.32-1.2.11-server
+2023-09-25T06:08:50.373672Z 0 [Warning] [MY-011068] [Server] The syntax '--skip-host-cache' is deprecated and will be removed in a future release. Please use SET GLOBAL host_cache_size=0 instead.
+2023-09-25T06:08:50.376209Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.32) starting as process 1
+2023-09-25T06:08:50.392635Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+2023-09-25T06:08:50.706842Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
+2023-09-25T06:08:51.163458Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
+2023-09-25T06:08:51.163534Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
+2023-09-25T06:08:51.251724Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Bind-address: '::' port: 33060, socket: /var/run/mysqld/mysqlx.sock
+2023-09-25T06:08:51.251945Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.32'  socket: '/var/lib/mysql/mysql.sock'  port: 3306  MySQL Community Server - GPL.
+#+end_example
+
+Get password if not given when starting instance.
+GENERATED ROOT PASSWORD: ke4G2#0Xt+v+8s^@WOr_u7CRH#7#10aD
+#+name: mysql-generated-password
+#+begin_src text
+  ke4G2#0Xt+v+8s^@WOr_u7CRH#7#10aD
+#+end_src
+
+sudo docker -it mysql_docker bash shell. Press C-g.
+#+begin_src sh
+  sudo docker exec -it mysql_docker bash
+#+end_src
+
+* Inside docker shell
+#+begin_src sh
+  mysql -uroot --password=<<mysql-password>>
+#+end_src
+
+#+begin_src sh
+  mysql -uroot --password=<<mysql-generated-password>>
+#+end_src
+
+Change password.
+#+begin_src sh :eval no
+  ALTER USER 'root'@'localhost' IDENTIFIED BY '[newpassword]';
+#+end_src
+
+Remember if command is run from org then you have to switch to shell
+and press C-c C-c.
+#+begin_src sh
+  \h
+#+end_src
+
+* Copy file to docker
+https://stackoverflow.com/questions/68971170/how-to-add-files-to-an-existing-docker-image
+#+begin_src sh :exec no
+  docker cp /path/to/dir mycontainer:/path/in/container/
+#+end_src
+
+* Import/Export in docker
+https://adamtheautomator.com/docker-save-image/
+** Export container
+#+begin_src sh :exec no
+  sudo docker export container-id > name.tar
+#+end_src
+
+** Import container
+Tar file will be imported as image.
+#+begin_src sh :exec no
+  sudo docker import name.tar image_name:latest
+#+end_src
+
+** Save container as image
+https://phoenixnap.com/kb/how-to-commit-changes-to-docker-image
+#+begin_src sh :exec no
+  sudo docker commit <container-name> <image-name>
+#+end_src
+
+** Save image
+#+begin_src sh :exec no
+  sudo docker save image_name > name.tar
+#+end_src
+
+** Load image
+#+begin_src sh :exec no
+  sudo docker load < name.tar
+#+end_src

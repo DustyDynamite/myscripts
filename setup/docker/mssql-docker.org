@@ -1,0 +1,35 @@
+#+TITLE:MS-SQL Docker
+#+DESCRIPTION: Setup and usage of docker file of ms-sql docker
+#+TODO: TODO(t) NOTE(n@) TIME(l!) | DONE(D)
+#+PROPERTY: LOG_INTO_DRAWER t
+#+PROPERTY: header-args :results verbatim replace output :exports both :noweb yes :session ms-sql-docker
+
+https://learn.microsoft.com/en-us/sql/linux/quickstart-install-connect-docker?view=sql-server-ver16&pivots=cs1-bash
+
+* Daemon
+Start secondary shell.
+#+begin_src sh :session docker-daemon
+  echo docker-daemon
+#+end_src
+
+Start daemon.
+#+begin_src sh :session docker-daemon
+  sudo dockerd
+#+end_src
+
+* Setup docker
+Start shell.
+#+begin_src sh
+  echo shell
+#+end_src
+
+#+RESULTS:
+: hello
+
+Pull ms-sql docker image.
+#+begin_src sh
+  sudo docker pull mcr.microsoft.com/mssql/server:2022-latest
+#+end_src
+
+#+RESULTS:
+

@@ -1,0 +1,33 @@
+#+TITLE:Sqlite3
+#+DESCRIPTION: Testing sql
+#+TODO: TODO(t) NOTE(n@) TIME(l!) | DONE(D)
+#+PROPERTY: LOG_INTO_DRAWER t
+#+PROPERTY: header-args :results verbatim replace output :exports both :noweb yes :session sqlite3-repl :db cms
+
+Start shell.
+
+#+begin_src sqlite
+  ATTACH DATABASE cms AS cms;
+#+end_src
+
+#+RESULTS:
+
+
+
+#+begin_src sqlite
+  CREATE TABLE ascost ([assetno] [char](50) NOT NULL,[work_type] [char](5) NOT NULL,[per1] [bigint],[per2] [bigint],[per3] [bigint],[per4] [bigint],[per5] [bigint],[per6] [bigint],[per7] [bigint],[per8] [bigint],[per9] [bigint],[per10] [bigint],[per11] [bigint],[per12] [bigint],[per13] [bigint],[plant_no] [char](3) NOT NULL)
+#+end_src
+
+#+RESULTS:
+
+#+begin_src  sqlite
+  ALTER TABLE cms ALTER COLUMN [assetno] char(50) NOT NULL
+  go
+  ALTER TABLE ascost] ALTER COLUMN [work_type] char(5) NOT NULL
+  go
+  ALTER TABLE [cms].[ascost] ADD CONSTRAINT [PK__ascost__078C1F06] PRIMARY KEY  CLUSTERED ([assetno],[work_type])
+  go
+  CREATE UNIQUE NONCLUSTERED INDEX [ascost_ndx] ON [cms].[ascost]([assetno] ASC,[work_type] ASC)
+  go
+#+end_src
+
