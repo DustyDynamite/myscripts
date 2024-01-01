@@ -1,0 +1,169 @@
+#!/bin/bash
+#   Encrypt & Decrypt Files from the Command Line. 
+#   Includes filename de-obfuscation.
+#   Simple wrapper scripts to make encryption even easier.
+#   https://github.com/spook/encrypt-decrypt
+#
+#   Copyright (c) 2018 by Uncle Spook
+#
+#   MIT License
+#
+#   Permission is hereby granted, free of charge, to any person obtaining a copy
+#   of this software and associated documentation files (the "Software"), to deal
+#   in the Software without restriction, including without limitation the rights
+#   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#   copies of the Software, and to permit persons to whom the Software is
+#   furnished to do so, subject to the following conditions:
+#   The above copyright notice and this permission notice shall be included in all
+#   copies or substantial portions of the Software.
+#   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+#   SOFTWARE.
+
+usage () {
+    echo "Usage: decrypt [options] FILES..."
+    echo ""
+    echo "Decrypt files that were encrypted with a symmetric key (a passphrase)."
+    echo "Will de-obscure filenames if they were obscured."
+    echo "If FILES are omitted, it will try to decrypte all files in the current"
+    echo "directory, including hidden files."
+    echo ""
+    echo "Options:"
+    echo "    -h | -?    Display this usage help"
+    echo "    -p PHRASE  Passphrase - don't use this, it's just for testing!"
+    echo "    -r         Recurse into subdirectories"
+    echo "    -t         Test mode, show what would be done but don't do it"
+    echo "    -v         Verbose mode; give more output"
+    exit 0
+}
+
+# Parse command options
+pwd=""
+recurse=false
+testmode=false
+verbose=false
+OPTIND=1         # Reset in case getopts was used earlier
+while getopts "h?p:rtv" opt; do
+    case "$opt" in
+    h|\?)
+        usage
+        exit 0
+        ;;
+    p)  pwd=$OPTARG
+        ;;
+    r)  recurse=true
+        ;;
+    t)  testmode=true
+        ;;
+    v)  verbose=true
+        ;;
+    esac
+done
+shift $((OPTIND-1))
+[ "${1:-}" = "--" ] && shift
+
+# Check dependencies
+if ! command -v base64 1>/dev/null; then
+    echo "*** base64 tool is missing, please install it (coreutils package?)"
+    exit 65 # ENOPKG package not installed
+fi
+if ! command -v gpg 1>/dev/null; then
+    echo "*** gpg tool is missing, please install it (gpg package?)"
+    exit 65 # ENOPKG package not installed
+fi
+if ! command -v readlink 1>/dev/null; then
+    echo "*** readlink tool is missing, please install it (coreutils package?)"
+    exit 65 # ENOPKG package not installed
+fi
+
+
+# Get passphrase
+if [ -z "$pwd" ] ; then
+    echo -n 'Passphrase: '
+    read -s pwd
+    echo
+fi
+if [ -z "$pwd" ] ; then
+    echo "*** Passphrase must not be empty"
+    exit 22
+fi
+
+# Build the list of files
+shopt -s dotglob nullglob       # Match hidden files and don't give '*' if nothing found
+[[ $# -ge 1 ]] || set -- `pwd`  # Default to "here"
+#ignore="(^|\/)\.\.?$"   # skip . .. /. /.. blah/. blah/.. and so on, but not ... nor blah/a.
+files=()    # Start empty
+BASE=`readlink -e .`/
+for path in "$@"; do 
+#    if [[ "$path" =~ $ignore ]]; then
+#        continue;
+#    fi
+
+    # Because we handle filenames with spaces in them, 
+    #  we do a trick where we pump the list of filenames, 
+    #  delimited by \0, into `read` which can use the \0 
+    #  as a delimiter.  This lets us build up the shell array
+    #  with filenames that contain spaces and other weird characters.
+    while IFS=  read -r -d $'\0' FILE; do
+        FILE=`readlink -e "$FILE"`
+        CHOP=${FILE/$BASE/}
+        files+=("$CHOP")
+    done < <(find "$path" $maxdepth -type f -print0)
+done
+
+# Sort and eliminate duplicates 
+#   We use the \0 technique, like above, so we don't split files with blanks in names
+sorted=()
+while IFS=  read -r -d $'\0' FILE; do
+    sorted+=("$FILE")
+done < <(printf "%s\0" "${files[@]}" | sort -uz)
+
+# Process each file
+typeset -i i n  # be more efficient
+n=0
+for (( i=0; i<${#sorted[@]}; ++i )); do
+    f="${sorted[$i]}"
+    if [ -d "$f" ]; then
+        $verbose && echo "- skipdir: $f";
+        continue
+    fi
+    if [ ! -f "$f" ]; then
+        echo "*** No such file: $f";
+        exit 2
+    fi
+    if [[ "$f" != *".gpg" ]]
+    then
+        $verbose && echo "- already: $f";
+    else
+        o="${f%.*}" # Remove .gpg suffix
+        base=$(basename "$o")   # ${f##*/} also works
+
+        # Check if the name is obfuscated.  We use the prefix .:. to indicate obfuscation
+        what="decrypt"
+        if [[ "$base" = ".:."* ]] ; then
+            ba64=${base#.:.}                # Remove .:. prefix from base
+            ba64=${ba64//-/\/}              # Change dashes back to slashes
+            base=`echo $ba64 | base64 -d`   # deobfuscate
+            path=$(dirname "$o")            # ${f%/*} fails if no path in name
+            o="$path/$base"
+            what="dcr/obs"
+        fi
+        $testmode && echo "- would $what: $o" && continue
+
+        echo "$pwd" | gpg --batch --yes --passphrase-fd 0 --decrypt -o "$o" -q "$f"
+        err=$?
+        if [ $err -ne 0 ]; then
+            echo "*** Decryption failed, aborting: $f"
+            exit 126
+        fi
+        rm "$f"
+        n=$((n+1))
+        $verbose && echo "+ decrypt: $o"
+    fi
+done
+echo "$n files decrypted"
+exit 0

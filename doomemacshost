@@ -1,0 +1,4 @@
+#!/bin/bash
+
+HOME=/home/hassaan/git/emacs.d/doomemacs
+emacs --daemon=doom $@
