@@ -137,3 +137,6 @@ Disable cpu3.
 #+begin_src sh
   echo "0" > /sys/devices/system/cpu/cpu3/online 
 #+end_src
+
+#+RESULTS:
+: sh: /sys/devices/system/cpu/cpu3/online: Permission denied
